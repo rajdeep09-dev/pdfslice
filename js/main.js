@@ -6,7 +6,7 @@
 
 const DEFAULTS = {
   rss2json:'', nvidia:'', groq:'', gemini:'', hf:'', scrapingdog:'',
-  nvidiaModel:'moonshotai/kimi-k2.6',
+  nvidiaModel:'deepseek-ai/deepseek-v4-flash',
   nvidiaCustomModel:'',
   groqModel:'llama-3.3-70b-versatile',
   geminiModel:'gemini-2.0-flash',
@@ -1462,13 +1462,19 @@ async function callLLM(provider, prompt) {
     temperature:0.1
   };
 
-  // Only kimi-k2.6 supports chat_template_kwargs thinking mode
+  // Only kimi-k2.6 and deepseek support chat_template_kwargs thinking mode
   if(provider === 'nvidia') {
     body.stream = false;
-    body.top_p = 1.0;
     const modelName = config.model.toLowerCase();
-    if(modelName.includes('kimi') || modelName.includes('deepseek')) {
-      body.chat_template_kwargs = { thinking: false };
+    if(modelName.includes('deepseek')) {
+      body.temperature = 1.0;
+      body.top_p = 0.95;
+      body.chat_template_kwargs = { thinking: true, reasoning_effort: "high" };
+    } else {
+      body.top_p = 1.0;
+      if(modelName.includes('kimi')) {
+        body.chat_template_kwargs = { thinking: false };
+      }
     }
   }
 
@@ -1561,9 +1567,16 @@ async function callLLMRaw(provider, prompt, maxTok=200) {
 
   const body = { model:config.model, messages:[{role:'user',content:prompt}], max_tokens:config.maxTokens, temperature:0.7 };
   if(provider==='nvidia') {
-    body.stream = false; body.top_p = 1.0;
+    body.stream = false;
     const m = config.model.toLowerCase();
-    if(m.includes('kimi')||m.includes('deepseek')) body.chat_template_kwargs = {thinking:false};
+    if(m.includes('deepseek')) {
+      body.temperature = 1.0;
+      body.top_p = 0.95;
+      body.chat_template_kwargs = { thinking: true, reasoning_effort: "high" };
+    } else {
+      body.top_p = 1.0;
+      if(m.includes('kimi')) body.chat_template_kwargs = {thinking:false};
+    }
   }
   const res = await fetchWithTimeout(config.url, 30000, {
     method:'POST',
