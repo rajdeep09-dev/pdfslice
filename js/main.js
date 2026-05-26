@@ -6,7 +6,7 @@
 
 const DEFAULTS = {
   rss2json:'', nvidia:'', groq:'', gemini:'', hf:'', scrapingdog:'',
-  nvidiaModel:'deepseek-ai/deepseek-v4-flash',
+  nvidiaModel:'meta/llama-3.1-8b-instruct',
   nvidiaCustomModel:'',
   groqModel:'llama-3.3-70b-versatile',
   geminiModel:'gemini-2.0-flash',
@@ -978,6 +978,23 @@ async function processAccount(handle, index) {
 // ── RSS FETCH ─────────────────────────────────────────────────
 async function fetchRSS(handle) {
   const apiKey = S.rss2json;
+  
+  if (S.scrapingdog) {
+    log(`      [RSS] Using ScrapingDog API primary fallback...`);
+    try {
+      const sdUrl = `https://api.scrapingdog.com/scrape?api_key=${S.scrapingdog}&url=${encodeURIComponent(`https://xcancel.com/${handle}`)}&dynamic=true`;
+      const res = await fetchWithTimeout(sdUrl, S.timeout * 1000);
+      if(res.ok) {
+        const html = await res.text();
+        const items = parseNitterHTMLTweets(html, handle);
+        if(items.length > 0) {
+          log(`      [RSS] ✓ ScrapingDog returned ${items.length} items`);
+          return { success:true, items, source:'scrapingdog' };
+        }
+      }
+    } catch(e) { log(`      [RSS] ScrapingDog failed: ${e.message}`, 'warn'); }
+  }
+
   const instances = S.nitterInstances;
   log(`      [RSS] Trying ${instances.length} Nitter instances...`);
 
@@ -991,7 +1008,7 @@ async function fetchRSS(handle) {
   ];
 
   for(const instance of instances) {
-    const base = instance.replace(/^https?:\/\//,'');
+    const base = instance.replace(/^https?:\\/\\//,'');
     const profileUrl = `https://${base}/${handle}`;
     const rssUrl = `https://${base}/${handle}/rss`;
 
@@ -1000,7 +1017,7 @@ async function fetchRSS(handle) {
     for(const proxy of corsProxies) {
       try {
         const proxyUrl = proxy + encodeURIComponent(profileUrl);
-        const res = await fetchWithTimeout(proxyUrl, 12000);
+        const res = await fetchWithTimeout(proxyUrl, 5000); // 5s fail fast timeout
         if(!res.ok) continue;
 
         let html;
@@ -1012,7 +1029,7 @@ async function fetchRSS(handle) {
         }
 
         // Check if we got valid Nitter HTML (not an error page)
-        if(html && html.includes('timeline-item') && html.includes(handle.toLowerCase())) {
+        if(html && html.includes('timeline-item')) {
           const items = parseNitterHTMLTweets(html, handle);
           if(items.length > 0) {
             log(`      [RSS] ✓ HTML scrape from ${base} — ${items.length} items`);
@@ -1026,7 +1043,7 @@ async function fetchRSS(handle) {
     log(`      [RSS] Trying ${base} via rss2json...`);
     try {
       const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&api_key=${apiKey}&count=30`;
-      const res = await fetchWithTimeout(apiUrl, S.timeout * 1000);
+      const res = await fetchWithTimeout(apiUrl, 5000); // 5s fail fast timeout
       if(!res.ok) { log(`      [RSS] ${base} HTTP ${res.status}`, 'warn'); continue; }
       const data = await res.json();
       if(data.status !== 'ok' || !data.items) { log(`      [RSS] ${base} invalid response`, 'warn'); continue; }
@@ -1247,22 +1264,46 @@ function parseNitterHTMLTweets(html, handle) {
 
 // ── PROFILE FETCH ─────────────────────────────────────────────
 async function fetchProfile(handle, preferredInstance) {
-  const instances = [preferredInstance, ...S.nitterInstances.filter(i=>i!==preferredInstance)];
-  log(`      [Profile] Trying ${Math.min(3, instances.length)} instances for profile...`);
+  if (preferredInstance === 'scrapingdog' || S.scrapingdog) {
+    try {
+      log(`      [Profile] Fetching profile via ScrapingDog...`);
+      const sdUrl = `https://api.scrapingdog.com/scrape?api_key=${S.scrapingdog}&url=${encodeURIComponent(`https://xcancel.com/${handle}`)}&dynamic=true`;
+      const res = await fetchWithTimeout(sdUrl, 10000);
+      if(res.ok) {
+        const html = await res.text();
+        const profile = parseProfileHTML(html, handle);
+        if((profile.followers || 0) > 0 || profile.display_name) {
+          log(`      [Profile] ✓ Got profile from ScrapingDog`);
+          return { success:true, ...profile };
+        }
+      }
+    } catch(e) { log(`      [Profile] ScrapingDog failed`, 'warn'); }
+  }
+
+  const instances = [...S.nitterInstances.filter(i=>i!=='scrapingdog')];
+  log(`      [Profile] Trying ${Math.min(3, instances.length)} Nitter instances...`);
   for(const instance of instances.slice(0,3)) {
     const base = instance.replace(/^https?:\/\//,'');
     const profileUrl = `https://${base}/${handle}`;
     const proxyUrls = [
+      `/api/proxy?url=${encodeURIComponent(profileUrl)}`,
       `https://api.allorigins.win/get?url=${encodeURIComponent(profileUrl)}`,
       `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(profileUrl)}`
     ];
     for(const proxyUrl of proxyUrls) {
       try {
         log(`      [Profile] Trying ${base} via proxy...`);
-        const res = await fetchWithTimeout(proxyUrl, 15000);
+        const res = await fetchWithTimeout(proxyUrl, 5000);
         if(!res.ok) continue;
-        const data = await res.json();
-        const html = data.contents || '';
+        
+        let html = '';
+        if(proxyUrl.includes('allorigins')) {
+           const data = await res.json();
+           html = data.contents || '';
+        } else {
+           html = await res.text();
+        }
+        
         if(!html) continue;
         const profile = parseProfileHTML(html, handle);
         if((profile.followers || 0) > 0 || profile.display_name) {
