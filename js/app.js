@@ -260,7 +260,14 @@ function removeFromQueue(h) { queue = queue.filter(q=>q.handle!==h); renderQueue
 function clearQueue() { queue = []; renderQueuePreview(); updateQueueBadge(); }
 function removeFromLiveQueue(h) { const item = queue.find(q=>q.handle===h); if(item) { item.status = 'skip'; renderLiveQueue(); } }
 function updateQueueBadge() { const b = document.getElementById('queueBadge'); if(b) { b.textContent=queue.length; b.style.display=queue.length?'':'none'; } }
-async function clearAllHistory() { if(confirm('Clear all?')) { await clearBatchesDB(); renderHistory(); } }
+async function clearAllHistory() {
+  if(!confirm('Clear all batch history AND interactions? This cannot be undone.')) return;
+  localStorage.removeItem('f12x_session_backup');
+  await clearBatchesDB(); 
+  await clearInteractionsDB();
+  renderHistory(); 
+  toast('History cleared'); 
+}
 
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
