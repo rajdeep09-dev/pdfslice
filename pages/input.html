@@ -2,8 +2,8 @@
   <div class="section-header">
     <div class="section-title">Add Accounts</div>
     <div style="display:flex;gap:8px;">
-      <button class="btn btn-secondary btn-sm" onclick="importCSV()">📂 CSV Import</button>
-      <button class="btn btn-purple btn-sm" onclick="importFullJSON()">⬇ Import JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="parent.importCSV()">📂 CSV Import</button>
+      <button class="btn btn-purple btn-sm" onclick="parent.importFullJSON()">⬇ Import JSON</button>
     </div>
   </div>
 
@@ -22,8 +22,8 @@
     <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div class="eta-display" id="queueEta"></div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary" onclick="clearInput()">✕ Clear</button>
-        <button class="btn btn-primary" onclick="addToQueue()">Add to Queue →</button>
+        <button class="btn btn-secondary" onclick="parent.clearInput()">✕ Clear</button>
+        <button class="btn btn-primary" onclick="parent.addToQueue(document.getElementById('urlInput').value)">Add to Queue →</button>
       </div>
     </div>
   </div>
@@ -31,7 +31,7 @@
   <div class="card" style="border-color:var(--purple-dim)">
     <div style="font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.9;">
       <div style="color:var(--purple);font-weight:500;margin-bottom:6px;">ℹ️ QUICK START v3.0</div>
-      <div>1. Add API keys in Settings → API Keys (rss2json + NVIDIA/Groq/Gemini)</div>
+      <div>1. Add API keys in Settings → API Keys</div>
       <div>2. Set your <strong>max budget per account</strong> ($0–$100) in Settings → Thresholds</div>
       <div>3. Configure <strong>Offers & Pricing Tiers</strong> in Settings → Offers</div>
       <div>4. Paste account URLs → Add to Queue → Start Phase 1 (2–3 accounts)</div>
@@ -47,19 +47,19 @@
         <div style="font-family:var(--sans);font-weight:700;font-size:14px;color:var(--blue);">🧠 Batch Analysis Prompt</div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;">Applied to EVERY profile in this batch. Leave empty to use built-in default. Variables: {{handle}}, {{bio}}, {{tweets}}</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="clearBatchPrompt()" title="Clear prompt">✕ Clear</button>
+      <button class="btn btn-ghost btn-sm" onclick="parent.clearBatchPrompt()" title="Clear prompt">✕ Clear</button>
     </div>
-    <textarea class="textarea" id="batchPromptBox" style="min-height:90px;font-size:12px;" placeholder="Optional: paste a custom analysis prompt here. It overrides the default for this batch only. Example: 'You are screening Twitter accounts for tech sponsorships. Check if @{{handle}} is a real person with original thoughts about startups, marketing, or SaaS. Bio: {{bio}}. Posts: {{tweets}}. Reply ONLY in JSON: {...}'"
-      oninput="saveSetting('promptAnalysis',this.value);document.getElementById('prompt_analysis')&&(document.getElementById('prompt_analysis').value=this.value)"></textarea>
+    <textarea class="textarea" id="batchPromptBox" style="min-height:90px;font-size:12px;" placeholder="Optional: paste a custom analysis prompt here..."
+      oninput="parent.saveSetting('promptAnalysis',this.value);"></textarea>
   </div>
 
   <div id="queuePreview" style="display:none">
     <div class="section-header" style="margin-top:8px;">
       <div style="font-size:14px;font-weight:700;">Queue (<span id="queueCount">0</span> / 25)</div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-danger btn-sm" onclick="clearQueue()">🗑 Clear Queue</button>
-        <button class="btn btn-warn btn-sm" id="phase1Btn" onclick="startPhase1()" style="display:none">🎯 Phase 1 (2–3)</button>
-        <button class="btn btn-primary" id="startBtn" onclick="startBatch()">▶ Start Full Batch</button>
+        <button class="btn btn-danger btn-sm" onclick="parent.clearQueue()">🗑 Clear Queue</button>
+        <button class="btn btn-warn btn-sm" id="phase1Btn" onclick="parent.startPhase1()" style="display:none">🎯 Phase 1 (2–3)</button>
+        <button class="btn btn-primary" id="startBtn" onclick="parent.startBatch()">▶ Start Full Batch</button>
       </div>
     </div>
     <div id="queueList"></div>
