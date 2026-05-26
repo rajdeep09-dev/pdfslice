@@ -1,7 +1,7 @@
 // ── CONSTANTS & DEFAULTS ──────────────────────────────────────
 const DEFAULTS = {
   rss2json:'', nvidia:'', groq:'', gemini:'', hf:'', scrapingdog:'',
-  nvidiaModel:'moonshotai/kimi-k2.6',
+  nvidiaModel:'meta/llama-3.1-8b-instruct',
   nvidiaCustomModel:'',
   groqModel:'llama-3.3-70b-versatile',
   geminiModel:'gemini-2.0-flash',

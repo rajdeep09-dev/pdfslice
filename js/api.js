@@ -145,18 +145,37 @@ function parseNitterHTMLTweets(html, handle) {
 }
 
 async function fetchProfile(handle, preferredInstance) {
-  const instances = [preferredInstance, ...S.nitterInstances.filter(i=>i!==preferredInstance)];
+  if (preferredInstance === 'scrapingdog' && S.scrapingdog) {
+    try {
+      const sdUrl = `https://api.scrapingdog.com/scrape?api_key=${S.scrapingdog}&url=${encodeURIComponent(`https://xcancel.com/${handle}`)}&dynamic=true`;
+      const res = await fetchWithTimeout(sdUrl, S.timeout * 1000);
+      if(res.ok) {
+        const html = await res.text();
+        const profile = parseProfileHTML(html, handle);
+        if(profile.followers > 0 || profile.display_name) return { success:true, ...profile };
+      }
+    } catch(e) {}
+    // If scrapingdog failed for profile but worked for RSS, we still fall through to nitter instances
+  }
+
+  const instances = [preferredInstance, ...S.nitterInstances.filter(i=>i!==preferredInstance && i!=='scrapingdog')];
   for(const instance of instances.slice(0,3)) {
-    if(!instance) continue;
+    if(!instance || instance === 'scrapingdog') continue;
     const base = instance.replace(/^https?:\/\//,'');
     const profileUrl = `https://${base}/${handle}`;
-    const proxyUrls = [`https://api.allorigins.win/get?url=${encodeURIComponent(profileUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(profileUrl)}` ];
+    const proxyUrls = [`/api/proxy?url=${encodeURIComponent(profileUrl)}`, `https://api.allorigins.win/get?url=${encodeURIComponent(profileUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(profileUrl)}` ];
     for(const proxyUrl of proxyUrls) {
       try {
-        const res = await fetchWithTimeout(proxyUrl, 15000);
+        const res = await fetchWithTimeout(proxyUrl, 10000);
         if(!res.ok) continue;
-        const data = await res.json();
-        const profile = parseProfileHTML(data.contents || '', handle);
+        let html = '';
+        if(proxyUrl.includes('allorigins')) {
+          const data = await res.json();
+          html = data.contents || '';
+        } else {
+          html = await res.text();
+        }
+        const profile = parseProfileHTML(html, handle);
         if(profile.followers > 0 || profile.display_name) return { success:true, ...profile };
       } catch(e) { continue; }
     }
@@ -187,9 +206,10 @@ async function runAIAnalysis(bio, tweetTexts, handle) {
   const defaultResult = { is_real_human: true, human_confidence: 50, is_theme_page: false, is_agency_run: false, is_ai_generated_persona: false, sponsored_content_ratio: 0, english_pct:75, niche_score:5, niche_label:'Unknown', bot_confidence:50, content_quality_score:5, ai_source:'none' };
   if(!S.nvidia && !S.groq && !S.gemini) return defaultResult;
   const prompt = buildAIPrompt(bio, tweetTexts, handle);
-  if(S.nvidia) try { const r = await callLLM('nvidia', prompt); if(r) return { ...r, ai_source:'nvidia_nim' }; } catch(e){}
-  if(S.groq) try { const r = await callLLM('groq', prompt); if(r) return { ...r, ai_source:'groq' }; } catch(e){}
-  if(S.gemini) try { const r = await callGemini(prompt); if(r) return { ...r, ai_source:'gemini' }; } catch(e){}
+  if(S.nvidia) { try { const r = await callLLM('nvidia', prompt); if(r) return { ...r, ai_source:'nvidia_nim' }; } catch(e){ log(`      [AI] NVIDIA failed: ${e.message}`, 'warn'); } }
+  if(S.groq) { try { const r = await callLLM('groq', prompt); if(r) return { ...r, ai_source:'groq' }; } catch(e){ log(`      [AI] Groq failed: ${e.message}`, 'warn'); } }
+  if(S.gemini) { try { const r = await callGemini(prompt); if(r) return { ...r, ai_source:'gemini' }; } catch(e){ log(`      [AI] Gemini failed: ${e.message}`, 'warn'); } }
+  log('      [AI] All AI providers failed. Reverting to manual check.', 'warn');
   return defaultResult;
 }
 
@@ -218,14 +238,17 @@ async function callLLM(provider, prompt) {
 
 async function callGemini(prompt) {
   if(!S.gemini) throw new Error('Missing Gemini key');
-  const model = S.geminiModel || 'gemini-1.5-flash';
+  const model = S.geminiModel || 'gemini-2.0-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${S.gemini.trim()}`;
   const res = await fetchWithTimeout(url, 45000, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
     body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{ maxOutputTokens: parseInt(S.maxTokens)||400, temperature:0.1 } })
   });
-  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  if(!res.ok) {
+    const err = await res.text().catch(()=>'');
+    throw new Error(`HTTP ${res.status}: ${err.slice(0, 100)}`);
+  }
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   return parseAIJSON(text);
