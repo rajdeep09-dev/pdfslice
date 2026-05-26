@@ -64,17 +64,18 @@ async function fetchRSS(handle) {
   if(S.scrapingdog) {
     log(`      [RSS] Trying ScrapingDog fallback...`);
     try {
-      const sdUrl = `https://api.scrapingdog.com/scrape?api_key=${S.scrapingdog}&url=${encodeURIComponent(`https://xcancel.com/${handle}`)}&dynamic=true`;
+      const rssEndpoint = `https://xcancel.com/${handle}/rss`;
+      const sdUrl = `https://api.scrapingdog.com/scrape?api_key=${S.scrapingdog}&url=${encodeURIComponent(rssEndpoint)}&dynamic=false`;
       const res = await fetchWithTimeout(sdUrl, S.timeout * 1000);
       if(res.ok) {
-        const html = await res.text();
-        const items = parseNitterHTMLTweets(html, handle);
-        log(`      [RSS] ✓ ScrapingDog returned ${items.length} items`);
-        return { success:true, items, source:'scrapingdog' };
+        const xml = await res.text();
+        const items = parseRawRSS(xml, handle);
+        if(items.length > 0) {
+          log(`      [RSS] ✓ ScrapingDog returned ${items.length} RSS items`);
+          return { success:true, items, source:'scrapingdog' };
+        }
       }
-    } catch(e) { log(`      [RSS] ScrapingDog failed`, 'warn'); }
-  }
-
+    } catch(e) { log(`      [RSS] ScrapingDog failed: ${e.message}`, 'warn'); }
   return { success:false, error:'All RSS fallbacks failed.' };
 }
 
