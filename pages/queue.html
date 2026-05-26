@@ -1,0 +1,32 @@
+<div class="section" id="section-queue">
+  <div class="section-header">
+    <div class="section-title">Processing</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" id="pauseBtn" onclick="pauseBatch()" disabled>⏸ Pause</button>
+      <button class="btn btn-danger btn-sm" id="stopBtn" onclick="stopBatch()" disabled>⏹ Stop</button>
+      <button class="btn btn-secondary btn-sm" id="retryBtn" onclick="retryFailed()" style="display:none">🔁 Retry Failed</button>
+    </div>
+  </div>
+
+  <div class="card" id="progressCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div id="progressLabel" class="eta-display">Idle</div>
+      <div id="progressPct" style="font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:500;">0%</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+      <div id="progressStats" style="font-family:var(--mono);font-size:11px;color:var(--text3);"></div>
+      <div id="etaText" class="eta-display" style="font-size:11px;"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:600;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;">Activity Log (Verbose)</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="log-box" id="logBox"><div class="log-line info">Waiting to start…</div></div>
+  </div>
+
+  <div id="liveQueueList"></div>
+</div>

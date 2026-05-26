@@ -1,0 +1,50 @@
+<div class="section" id="section-results">
+  <div class="section-header">
+    <div class="section-title">Results</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" id="copyPassingBtn" onclick="copyPassingURLs()" style="display:none">📋 Copy Passing</button>
+      <button class="btn btn-success btn-sm" id="exportCsvBtn" onclick="exportCSV()" style="display:none">📊 Export CSV</button>
+      <button class="btn btn-primary btn-sm" id="exportZipBtn" onclick="exportZIP()" style="display:none">📦 Download ZIP</button>
+      <button class="btn btn-purple btn-sm" id="exportJsonBtn" onclick="exportFullJSON()" style="display:none">⬆ Export JSON</button>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat-box">
+      <div class="stat-box-val blue" id="statTotal">0</div>
+      <div class="stat-box-label">Processed</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-val green" id="statPass">0</div>
+      <div class="stat-box-label">Human + Qualified</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-val red" id="statFail">0</div>
+      <div class="stat-box-label">Failed / AI / Bot</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-val yellow" id="statManual">0</div>
+      <div class="stat-box-label">Manual Review</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-val orange" id="statFlagged">0</div>
+      <div class="stat-box-label">Flagged (Suspicious)</div>
+    </div>
+  </div>
+
+  <div class="filter-bar" id="filterBar" style="display:none">
+    <button class="filter-btn active" onclick="filterResults('all',this)">All</button>
+    <button class="filter-btn" onclick="filterResults('pass',this)">✅ Human + Qualified</button>
+    <button class="filter-btn" onclick="filterResults('fail',this)">❌ AI / Bot / Fail</button>
+    <button class="filter-btn" onclick="filterResults('manual',this)">⚠️ Manual</button>
+    <button class="filter-btn" onclick="filterResults('flagged',this)">🚩 Flagged</button>
+  </div>
+
+  <div id="resultsList">
+    <div class="empty" id="resultsEmpty">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No results yet</div>
+      <div class="empty-desc">Add accounts in the Input tab and start a batch to see results here.</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<div class="section" id="section-outreach">
+  <div class="section-header">
+    <div class="section-title">Outreach Engine</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="generateAllDMs()">🤖 Generate All DMs</button>
+      <button class="btn btn-success btn-sm" onclick="copyAllFirstDMs()">📋 Copy All 1st DMs</button>
+    </div>
+  </div>
+
+  <div id="outreachEmpty" class="empty">
+    <div class="empty-icon">💬</div>
+    <div class="empty-title">No qualified accounts yet</div>
+    <div class="empty-desc">Process a batch and qualify human accounts to generate AI-powered DM sequences here.</div>
+  </div>
+
+  <div id="outreachList"></div>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Interaction Log</div>
+    <div id="interactionLog"></div>
+  </div>
+</div>

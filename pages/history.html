@@ -1,0 +1,16 @@
+<div class="section" id="section-history">
+  <div class="section-header">
+    <div class="section-title">Batch History</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div id="storageInfo" style="font-family:var(--mono);font-size:11px;color:var(--text3);"></div>
+      <button class="btn btn-danger btn-sm" onclick="clearAllHistory()">🗑 Clear All</button>
+    </div>
+  </div>
+  <div id="historyList">
+    <div class="empty" id="historyEmpty">
+      <div class="empty-icon">📂</div>
+      <div class="empty-title">No history yet</div>
+      <div class="empty-desc">Completed batches are saved to IndexedDB (up to 512MB quota). All data persists locally across sessions.</div>
+    </div>
+  </div>
+</div>

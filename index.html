@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>F12X v3 · Human Account Qualifier + Outreach Engine</title>
+
+<!-- CDN Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="offline-banner" id="offlineBanner">⚡ You are offline. Check your connection before starting a batch.</div>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">F12X</div>
+    <div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;">Human Qualifier + Outreach</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-icon btn-sm" onclick="openSettings()" title="Settings">⚙️</button>
+    <button class="btn btn-ghost btn-icon btn-sm" id="themeBtn" onclick="toggleTheme()" title="Theme">🌙</button>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showSection('input',this)" id="nav-input">INPUT</button>
+  <button class="nav-btn" onclick="showSection('queue',this)" id="nav-queue">QUEUE <span class="badge" id="queueBadge" style="display:none">0</span></button>
+  <button class="nav-btn" onclick="showSection('results',this)" id="nav-results">RESULTS <span class="badge green" id="passBadge" style="display:none">0</span></button>
+  <button class="nav-btn" onclick="showSection('outreach',this)" id="nav-outreach">OUTREACH <span class="badge purple" id="outreachBadge" style="display:none">0</span></button>
+  <button class="nav-btn" onclick="showSection('history',this)" id="nav-history">HISTORY</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION: INPUT -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="mount-input"></div>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION: QUEUE / PROCESSING -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="mount-queue"></div>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION: RESULTS -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="mount-results"></div>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION: OUTREACH -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="mount-outreach"></div>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION: HISTORY -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="mount-history"></div>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SETTINGS MODAL -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal-bg" id="settingsModal" onclick="closeSettingsOutside(event)">
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title">⚙️ Settings</div>
+    <button class="modal-close" onclick="closeSettings()">✕</button>
+  </div>
+
+  <div class="settings-tabs">
+    <button class="stab active" onclick="switchSettingsTab('api',this)">API Keys</button>
+    <button class="stab" onclick="switchSettingsTab('models',this)">Models</button>
+    <button class="stab" onclick="switchSettingsTab('nitter',this)">Nitter</button>
+    <button class="stab" onclick="switchSettingsTab('thresholds',this)">Thresholds</button>
+    <button class="stab" onclick="switchSettingsTab('offers',this)">Offers</button>
+    <button class="stab" onclick="switchSettingsTab('prompts',this)">Prompts</button>
+    <button class="stab" onclick="switchSettingsTab('fetch',this)">Fetch</button>
+    <button class="stab" onclick="switchSettingsTab('pdf',this)">PDF</button>
+    <button class="stab" onclick="switchSettingsTab('csv',this)">CSV</button>
+    <button class="stab" onclick="switchSettingsTab('advanced',this)">Advanced</button>
+  </div>
+
+  <div class="modal-body">
+
+    <!-- TAB: API KEYS -->
+    <div class="stab-content active" id="stab-api">
+      <div style="margin-bottom:12px;">
+        <div class="input-group">
+          <label class="input-label">rss2json API Key <span style="color:var(--red)">*</span></label>
+          <div class="api-test-row">
+            <input type="password" autocapitalize="off" autocomplete="off" spellcheck="false" autocorrect="off" class="input" id="key_rss2json" placeholder="your-rss2json-key" style="flex:1" oninput="saveKey('rss2json',this.value)">
+            <div class="api-test-dot" id="dot_rss2json"></div>
+            <button class="btn btn-secondary btn-sm" onclick="testAPI('rss2json')">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Get free key at rss2json.com (10,000 requests/month)</div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">NVIDIA NIM API Key</label>
+          <div class="api-test-row">
+            <input type="password" autocapitalize="off" autocomplete="off" spellcheck="false" autocorrect="off" class="input" id="key_nvidia" placeholder="nvapi-..." style="flex:1" oninput="saveKey('nvidia',this.value)">
+            <div class="api-test-dot" id="dot_nvidia"></div>
+            <button class="btn btn-secondary btn-sm" onclick="testAPI('nvidia')">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Free credits at build.nvidia.com — supports kimi-k2.6 & deepseek-v4-pro</div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">NVIDIA Custom Model Name</label>
+          <input type="text" class="input" id="nvidia_custom_model" placeholder="e.g. moonshotai/kimi-k2.6" oninput="saveSetting('nvidiaCustomModel',this.value)">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Leave empty to use dropdown selection. Used only if filled.</div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Groq API Key (AI Fallback)</label>
+          <div class="api-test-row">
+            <input type="password" autocapitalize="off" autocomplete="off" spellcheck="false" autocorrect="off" class="input" id="key_groq" placeholder="gsk_..." style="flex:1" oninput="saveKey('groq',this.value)">
+            <div class="api-test-dot" id="dot_groq"></div>
+            <button class="btn btn-secondary btn-sm" onclick="testAPI('groq')">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Free tier at console.groq.com — fallback if NVIDIA fails</div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Gemini API Key (AI Fallback 2)</label>
+          <div class="api-test-row">
+            <input type="password" autocapitalize="off" autocomplete="off" spellcheck="false" autocorrect="off" class="input" id="key_gemini" placeholder="AIza..." style="flex:1" oninput="saveKey('gemini',this.value)">
+            <div class="api-test-dot" id="dot_gemini"></div>
+            <button class="btn btn-secondary btn-sm" onclick="testAPI('gemini')">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Free tier at aistudio.google.com — fallback if Groq fails</div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">HuggingFace Token</label>
+          <div class="api-test-row">
+            <input type="password" autocapitalize="off" autocomplete="off" spellcheck="false" autocorrect="off" class="input" id="key_hf" placeholder="hf_..." style="flex:1" oninput="saveKey('hf',this.value)">
+            <div class="api-test-dot" id="dot_hf"></div>
+            <button class="btn btn-secondary btn-sm" onclick="testAPI('hf')">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Language detection fallback — free at huggingface.co</div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">ScrapingDog API Key (Last Resort)</label>
+          <div class="api-test-row">
+            <input type="password" autocapitalize="off" autocomplete="off" spellcheck="false" autocorrect="off" class="input" id="key_scrapingdog" placeholder="your-key" style="flex:1" oninput="saveKey('scrapingdog',this.value)">
+            <div class="api-test-dot" id="dot_scrapingdog"></div>
+            <button class="btn btn-secondary btn-sm" onclick="testAPI('scrapingdog')">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">1,000 free credits at scrapingdog.com — only if Nitter fails</div>
+        </div>
+
+        <button class="btn btn-danger btn-sm" onclick="clearAllKeys()">🗑 Clear All API Keys</button>
+      </div>
+    </div>
+
+    <!-- TAB: MODELS -->
+    <div class="stab-content" id="stab-models">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:12px;">Choose which AI model to use for account analysis. Larger models = better accuracy but slower.</div>
+
+      <div class="input-group">
+        <label class="input-label">NVIDIA NIM Model</label>
+        <select class="select" id="model_nvidia" onchange="saveSetting('nvidiaModel',this.value)">
+          <option value="meta/llama-3.1-8b-instruct">meta/llama-3.1-8b-instruct (fast)</option>
+          <option value="meta/llama-3.3-70b-instruct">meta/llama-3.3-70b-instruct (balanced)</option>
+          <option value="moonshotai/kimi-k2.6">moonshotai/kimi-k2.6 (accurate, thinking)</option>
+          <option value="deepseek-ai/deepseek-v4-pro">deepseek-ai/deepseek-v4-pro (best reasoning)</option>
+          <option value="mistralai/mistral-7b-instruct-v0.3">mistralai/mistral-7b-instruct (free tier)</option>
+        </select>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">kimi-k2.6 and deepseek-v4-pro recommended for human detection</div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Groq Model (Fallback)</label>
+        <select class="select" id="model_groq" onchange="saveSetting('groqModel',this.value)">
+          <option value="llama3-8b-8192">llama3-8b-8192 (fast, 8k ctx)</option>
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (accurate, 32k out)</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (fastest)</option>
+          <option value="mixtral-8x7b-32768">mixtral-8x7b-32768 (balanced)</option>
+          <option value="gemma2-9b-it">gemma2-9b-it (good analysis)</option>
+        </select>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Max output tokens are capped per model to avoid HTTP 400 errors</div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Gemini Model (Fallback 2)</label>
+        <select class="select" id="model_gemini" onchange="saveSetting('geminiModel',this.value)">
+          <option value="gemini-2.0-flash">gemini-2.0-flash (fast, free)</option>
+          <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash (balanced)</option>
+          <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro (best)</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash (legacy)</option>
+          <option value="gemini-1.5-pro">gemini-1.5-pro (legacy)</option>
+        </select>
+      </div>
+
+      <div class="setting-row" style="margin-top:12px;">
+        <div class="setting-info"><div class="setting-name">Max tokens per analysis</div><div class="setting-desc">Output token cap — auto-capped per provider/model. Safe default: 400</div></div>
+        <div class="setting-control"><input type="number" class="input" id="maxTokens" style="width:80px" value="400" min="50" max="32768" oninput="saveSetting('maxTokens',Math.min(32768,Math.max(50,+this.value||400)))"></div>
+      </div>
+    </div>
+
+    <!-- TAB: NITTER -->
+    <div class="stab-content" id="stab-nitter">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:12px;">Drag to reorder priority. The app tries each instance in order until one works.</div>
+      <div id="nitterList"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" class="input" id="newNitterUrl" placeholder="https://custom-nitter.com" style="flex:1">
+        <button class="btn btn-secondary btn-sm" onclick="addNitterInstance()">+ Add</button>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="testAllNitter()">🔍 Test All Instances</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetNitterInstances()">↺ Reset to Default</button>
+      </div>
+      <div class="setting-row" style="margin-top:12px;">
+        <div class="setting-info"><div class="setting-name">Auto-skip dead instances</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="autoSkipNitter" onchange="saveSetting('autoSkipNitter',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+    </div>
+
+    <!-- TAB: THRESHOLDS -->
+    <div class="stab-content" id="stab-thresholds">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--orange);margin-bottom:12px;padding:8px;background:var(--orange-dim);border-radius:6px;border:1px solid rgba(255,107,53,0.2);">🎯 These thresholds filter for REAL HUMAN accounts with original content. AI accounts, theme pages, and sponsored-only accounts will be rejected.</div>
+
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min followers</div><div class="setting-desc">Default: 5,000</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minFollowers" style="width:90px" oninput="saveSetting('minFollowers',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max followers</div><div class="setting-desc">Default: 75,000</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_maxFollowers" style="width:90px" oninput="saveSetting('maxFollowers',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min engagement rate %</div><div class="setting-desc">Default: 3.0%</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minEngagement" step="0.1" style="width:90px" oninput="saveSetting('minEngagement',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min reach ratio (views/followers) — ORIGINAL POSTS ONLY</div><div class="setting-desc">Reposts are excluded. Default: 0.70</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minReach" step="0.01" style="width:90px" oninput="saveSetting('minReach',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Require green checkmark</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="th_requireCheckmark" onchange="saveSetting('requireCheckmark',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min niche score (0–10)</div><div class="setting-desc">Tech / startups / business / e-commerce / marketing / sales</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minNiche" step="0.5" min="0" max="10" style="width:90px" oninput="saveSetting('minNiche',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min English tweet %</div><div class="setting-desc">Default: 80%</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minEnglish" min="0" max="100" style="width:90px" oninput="saveSetting('minEnglish',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max days since last post</div><div class="setting-desc">Inactivity threshold (default: 30)</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_maxDays" style="width:90px" oninput="saveSetting('maxDays',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min original content %</div><div class="setting-desc">Exclude reposts/retweets. Default: 50%</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minOriginal" min="0" max="100" style="width:90px" oninput="saveSetting('minOriginal',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max following/follower ratio</div><div class="setting-desc">Spam signal (default: 5.0)</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_maxRatio" step="0.5" style="width:90px" oninput="saveSetting('maxRatio',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Min human confidence % (AI-detected)</div><div class="setting-desc">Reject if AI thinks account is fake. Default: 70%</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_minHuman" min="0" max="100" style="width:90px" oninput="saveSetting('minHuman',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max sponsored content %</div><div class="setting-desc">Reject if only posting promos. Default: 60%</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_maxSponsored" min="0" max="100" style="width:90px" oninput="saveSetting('maxSponsored',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max repost ratio %</div><div class="setting-desc">Reject if 9/10 posts are reposts. Default: 80%</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_maxRepost" min="0" max="100" style="width:90px" oninput="saveSetting('maxRepost',+this.value)"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max budget per account ($)</div><div class="setting-desc">For sponsorship pricing. Default: 75</div></div>
+        <div class="setting-control"><input type="number" class="input" id="th_maxBudget" min="0" max="500" style="width:90px" oninput="saveSetting('maxBudget',+this.value)"></div>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-secondary btn-sm" onclick="resetThresholds()">↺ Reset to Defaults</button>
+      </div>
+    </div>
+
+    <!-- TAB: OFFERS -->
+    <div class="stab-content" id="stab-offers">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:12px;">Define your sponsorship offers and follower-based pricing tiers. The app auto-calculates pricing for each qualified account.</div>
+      <div id="offersList"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="addOffer()">+ Add Offer</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetOffers()">↺ Reset Default</button>
+      </div>
+      <div class="divider"></div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:8px;">GLOBAL PRICING TIERS</div>
+      <div id="tiersList"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="addTier()">+ Add Tier</button>
+      </div>
+    </div>
+
+    <!-- TAB: PROMPTS -->
+    <div class="stab-content" id="stab-prompts">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:12px;">Custom prompts applied to every profile in the batch. Leave empty to use built-in defaults.</div>
+      <div class="input-group">
+        <label class="input-label">AI Analysis Prompt Template</label>
+        <textarea class="textarea" id="prompt_analysis" style="min-height:220px;" placeholder="Leave empty for default..." onblur="saveSetting('promptAnalysis',this.value)"></textarea>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Available variables: {{handle}}, {{bio}}, {{tweets}}, {{followers}}</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">DM Hook (1st Message) Template</label>
+        <textarea class="textarea" id="prompt_dm1" style="min-height:100px;" placeholder="Leave empty for default..." onblur="saveSetting('promptDM1',this.value)"></textarea>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Must NOT mention offer or pricing. Available: {{handle}}, {{bio}}, {{niche}}, {{topic}}</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">DM Pitch (2nd Message) Template</label>
+        <textarea class="textarea" id="prompt_dm2" style="min-height:100px;" placeholder="Leave empty for default..." onblur="saveSetting('promptDM2',this.value)"></textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">DM Offer (3rd Message) Template</label>
+        <textarea class="textarea" id="prompt_dm3" style="min-height:100px;" placeholder="Leave empty for default..." onblur="saveSetting('promptDM3',this.value)"></textarea>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">Available: {{handle}}, {{price}}, {{offerName}}, {{commission}}%</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="resetPrompts()">🗑 Reset All Prompts</button>
+    </div>
+
+    <!-- TAB: FETCH -->
+    <div class="stab-content" id="stab-fetch">
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Posts to analyze per account</div></div>
+        <div class="setting-control">
+          <select class="select" id="ft_postCount" style="width:80px" onchange="saveSetting('postCount',+this.value)">
+            <option value="5">5</option><option value="10" selected>10</option>
+            <option value="15">15</option><option value="20">20</option><option value="30">30</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Exclude retweets from analysis</div><div class="setting-desc">Reposts do NOT count for engagement or reach</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="ft_excludeRT" checked onchange="saveSetting('excludeRT',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Exclude replies</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="ft_excludeReplies" checked onchange="saveSetting('excludeReplies',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Exclude outlier tweets</div><div class="setting-desc">Remove tweets with views > 3× average</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="ft_excludeOutliers" checked onchange="saveSetting('excludeOutliers',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Delay between accounts</div></div>
+        <div class="setting-control">
+          <select class="select" id="ft_delay" style="width:80px" onchange="saveSetting('delay',+this.value)">
+            <option value="2">2s</option><option value="5" selected>5s</option>
+            <option value="10">10s</option><option value="15">15s</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Retries on failure</div></div>
+        <div class="setting-control">
+          <select class="select" id="ft_retries" style="width:80px" onchange="saveSetting('retries',+this.value)">
+            <option value="1">1</option><option value="3" selected>3</option><option value="5">5</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Timeout per account</div></div>
+        <div class="setting-control">
+          <select class="select" id="ft_timeout" style="width:80px" onchange="saveSetting('timeout',+this.value)">
+            <option value="15">15s</option><option value="30" selected>30s</option><option value="60">60s</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: PDF -->
+    <div class="stab-content" id="stab-pdf">
+      <div class="input-group">
+        <label class="input-label">Company Logo</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="file" id="logoInput" accept="image/*" onchange="uploadLogo(this)" style="display:none">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('logoInput').click()">📁 Upload Logo</button>
+          <span id="logoStatus" style="font-family:var(--mono);font-size:11px;color:var(--text3);">No logo set</span>
+          <button class="btn btn-ghost btn-sm" onclick="removeLogo()" id="removeLogoBtn" style="display:none">✕</button>
+        </div>
+        <div id="logoPreview" style="margin-top:8px;"></div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Company / Header Text</label>
+        <input type="text" class="input" id="pdf_company" placeholder="Your Company Name" oninput="saveSetting('company',this.value)">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include tweet text in PDF</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="pdf_incTweets" checked onchange="saveSetting('pdfIncTweets',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include engagement charts</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="pdf_incCharts" checked onchange="saveSetting('pdfIncCharts',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include human/AI analysis</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="pdf_incHuman" checked onchange="saveSetting('pdfIncHuman',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Download format</div></div>
+        <div class="setting-control">
+          <select class="select" id="pdf_format" style="width:120px" onchange="saveSetting('pdfFormat',this.value)">
+            <option value="zip">ZIP of all</option><option value="individual">Individual</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CSV -->
+    <div class="stab-content" id="stab-csv">
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Export which accounts</div></div>
+        <div class="setting-control">
+          <select class="select" id="csv_export" style="width:130px" onchange="saveSetting('csvExport',this.value)">
+            <option value="all">All</option>
+            <option value="pass" selected>Human + Passing only</option>
+            <option value="fail">Failing only</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include fail reasons</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="csv_failReasons" checked onchange="saveSetting('csvFailReasons',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include AI scores</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="csv_aiScores" checked onchange="saveSetting('csvAiScores',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include human detection scores</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="csv_humanScores" checked onchange="saveSetting('csvHumanScores',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Include price/budget column</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="csv_price" checked onchange="saveSetting('csvPrice',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Column separator</div></div>
+        <div class="setting-control">
+          <select class="select" id="csv_sep" style="width:100px" onchange="saveSetting('csvSep',this.value)">
+            <option value=",">Comma</option><option value=";">Semicolon</option><option value="	">Tab</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ADVANCED -->
+    <div class="stab-content" id="stab-advanced">
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Enable batch history</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="adv_history" checked onchange="saveSetting('saveHistory',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Max stored batches</div></div>
+        <div class="setting-control"><input type="number" class="input" id="adv_maxBatches" value="50" style="width:70px" oninput="saveSetting('maxBatches',Math.min(500,Math.max(1,+this.value||50)))"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Browser notification when done</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="adv_notify" checked onchange="saveSetting('notify',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Show verbose debug logs</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="adv_debug" checked onchange="saveSetting('debug',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><div class="setting-name">Auto-save batch on completion</div></div>
+        <div class="setting-control"><label class="toggle"><input type="checkbox" id="adv_autoSave" checked onchange="saveSetting('autoSave',this.checked)"><span class="toggle-slider"></span></label></div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:6px;">Storage Usage (IndexedDB — up to 512MB quota)</div>
+      <div id="storageUsageText" style="font-family:var(--mono);font-size:12px;color:var(--text2);"></div>
+      <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-danger btn-sm" onclick="nukeAllData()">💣 Clear All Data</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportSettingsOnly()">⬆ Export Settings</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importSettingsInput').click()">⬇ Import Settings</button>
+        <input type="file" id="importSettingsInput" accept=".json" style="display:none" onchange="importSettings(this)">
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- OUTREACH MODAL -->
+<div class="modal-bg" id="outreachModal" onclick="if(event.target===this)closeOutreachModal()">
+<div class="modal" style="max-width:520px;">
+  <div class="modal-header">
+    <div class="modal-title">💬 Outreach Composer</div>
+    <button class="modal-close" onclick="closeOutreachModal()">✕</button>
+  </div>
+  <div class="modal-body" id="outreachModalBody">
+  </div>
+</div>
+</div>
+
+<input type="file" id="csvImportInput" accept=".csv" style="display:none" onchange="handleCSVImport(this)">
+<canvas id="offscreenCanvas" style="display:none;position:absolute;left:-9999px"></canvas>
+
+
+
+<script>
+  async function loadApp() {
+    const sections = ['input', 'queue', 'results', 'outreach', 'history'];
+    for(const sec of sections) {
+      const res = await fetch('pages/' + sec + '.html');
+      const text = await res.text();
+      const mount = document.getElementById('mount-' + sec);
+      if(mount) mount.outerHTML = text;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'js/main.js';
+    document.body.appendChild(script);
+  }
+  loadApp();
+</script>
+
+</body>
+</html>
